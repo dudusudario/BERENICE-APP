@@ -23,7 +23,7 @@ Sistema de gerenciamento desenvolvido em React com foco em usabilidade e perform
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/berenice-app.git
+git clone https://github.com/dudusudario/BERENICE-APP.git
 cd berenice-app
 ```
 
@@ -90,4 +90,4 @@ npm run storybook
 
 ## 📝 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes. 
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
