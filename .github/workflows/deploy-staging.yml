@@ -1,0 +1,55 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Confirmar deploy para homologação'
+        required: true
+        default: 'yes'
+
+jobs:
+  build-and-deploy:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.confirm == 'yes' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 18
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Lint
+      run: npm run lint
+    
+    - name: Test
+      run: npm test
+    
+    - name: Build
+      run: npm run build
+      env:
+        VITE_API_URL: ${{ secrets.STAGING_API_URL }}
+        VITE_ENV: 'staging'
+    
+    - name: Create .env file
+      run: |
+        echo "API_URL=${{ secrets.STAGING_API_URL }}" >> .env
+        echo "ENV=staging" >> .env
+    
+    - name: Deploy to Staging Server
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+        ARGS: "-rlgoDzvc -i --delete"
+        SOURCE: "dist/"
+        REMOTE_HOST: ${{ secrets.STAGING_HOST }}
+        REMOTE_USER: ${{ secrets.STAGING_USER }}
+        TARGET: ${{ secrets.STAGING_TARGET_PATH }} 

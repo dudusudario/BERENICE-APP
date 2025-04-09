@@ -1,0 +1,60 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 18
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Lint
+      run: npm run lint
+    
+    - name: Test
+      run: npm test
+    
+    - name: Build
+      run: npm run build
+      env:
+        VITE_API_URL: ${{ secrets.DEV_API_URL }}
+        VITE_ENV: 'development'
+    
+    - name: Create .env file
+      run: |
+        echo "API_URL=${{ secrets.DEV_API_URL }}" >> .env
+        echo "ENV=development" >> .env
+    
+    - name: Deploy to Dev Server
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+        ARGS: "-rlgoDzvc -i --delete"
+        SOURCE: "dist/"
+        REMOTE_HOST: ${{ secrets.DEV_HOST }}
+        REMOTE_USER: ${{ secrets.DEV_USER }}
+        TARGET: ${{ secrets.DEV_TARGET_PATH }}
+        EXCLUDE: "/dist/, /node_modules/, /.git/, /.github/"
+    
+    - name: Post-deploy commands
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.DEV_HOST }}
+        username: ${{ secrets.DEV_USER }}
+        key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+        script: |
+          cd ${{ secrets.DEV_TARGET_PATH }}
+          cp .env dist/
+          pm2 restart dev-app || pm2 start npm --name "dev-app" -- start 
